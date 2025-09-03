@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('tests'); // Voeg deze regel toe
         Schema::create('tests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->integer('score')->nullable();
+            $table->string('name');
             $table->timestamps();
         });
     }
