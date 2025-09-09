@@ -13,56 +13,47 @@ class QuestionController extends Controller
    public function import(Request $request)
 {
     $request->validate([
-        'file' => 'required|mimes:json,csv,txt'
+        'file' => 'required|mimes:csv,txt'
     ]);
 
     $file = $request->file('file');
-    $extension = strtolower($file->getClientOriginalExtension());
     $path = $file->getRealPath();
 
     $questions = [];
 
-    if ($extension === 'json') {
-        $data = json_decode(file_get_contents($path), true);
-        foreach ($data as $row) {
-            $questions[] = [
-                'question' => $row['question'] ?? null,
-                'type'     => $row['type'] ?? null,
-                'options'  => isset($row['options']) ? json_encode($row['options']) : null,
-                'answer'   => $row['answer'] ?? null,
-            ];
-        }
-    } elseif ($extension === 'csv') {
-        $handle = fopen($path, 'r');
-        $header = fgetcsv($handle, 1000, ',');
-        $header = array_map(fn($h) => strtolower(trim($h)), $header); // lowercase & trim
+    $handle = fopen($path, 'r');
+    $header = fgetcsv($handle, 1000, ';'); // LET OP: puntkomma als delimiter
 
-        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-            if (count($row) !== count($header)) {
-                continue; // skip verkeerde rijen
-            }
+    while (($row = fgetcsv($handle, 1000, ';')) !== false) {
+        $rowData = array_combine($header, $row);
 
-            $rowData = array_combine($header, $row);
+        // Bouw de opties-array uit de kolommen answer_a, answer_b, answer_c
+        $options = [];
+        if (!empty($rowData['answer_a'])) $options[] = $rowData['answer_a'];
+        if (!empty($rowData['answer_b'])) $options[] = $rowData['answer_b'];
+        if (!empty($rowData['answer_c'])) $options[] = $rowData['answer_c'];
 
-            $questions[] = [
-                'question' => $rowData['question'] ?? $rowData['vraag'] ?? null,
-                'type'     => $rowData['type'] ?? $rowData['soort'] ?? null,
-                'options'  => !empty($rowData['options'] ?? $rowData['opties'] ?? null)
-                                ? json_encode(explode('|', $rowData['options'] ?? $rowData['opties']))
-                                : null,
-                'answer'   => $rowData['answer'] ?? $rowData['antwoord'] ?? null,
-            ];
-        }
-        fclose($handle);
+        // correct_answer is a/b/c -> vertaal naar juiste optie
+        $correct = null;
+        if (strtolower($rowData['correct_answer']) === 'a') $correct = $rowData['answer_a'];
+        if (strtolower($rowData['correct_answer']) === 'b') $correct = $rowData['answer_b'];
+        if (strtolower($rowData['correct_answer']) === 'c') $correct = $rowData['answer_c'];
+
+        $questions[] = [
+            'question' => $rowData['question'],
+            'type'     => 'multiple_choice',
+            'options'  => json_encode($options),
+            'answer'   => $correct,
+        ];
     }
+    fclose($handle);
 
     foreach ($questions as $q) {
-        if (!empty($q['question']) && !empty($q['type'])) {
-            Question::create($q);
-        }
+        \App\Models\Question::create($q);
     }
 
     return back()->with('success', 'Vragen succesvol geïmporteerd!');
 }
+
 
 }
