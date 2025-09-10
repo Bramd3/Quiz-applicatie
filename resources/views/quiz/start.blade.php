@@ -1,46 +1,47 @@
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="utf-8">
-    <title>Start quiz</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="font-family:sans-serif; max-width:720px; margin:32px auto;">
-    <h1>Start een nieuwe quiz</h1>
+<x-app-layout>
+    <x-slot name="header">
+        Start een nieuwe quiz
+    </x-slot>
 
-    @if ($errors->any())
-        <div style="color:#b91c1c; margin:12px 0;">
-            <ul>
-                @foreach ($errors->all() as $e)
-                    <li>{{ $e }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="max-w-lg mx-auto">
+        @if ($errors->any())
+            <div class="bg-red-100 text-red-800 rounded-lg p-4 mb-4">
+                <ul class="list-disc list-inside space-y-1">
+                    @foreach ($errors->all() as $e)
+                        <li>{{ $e }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-    <form method="POST" action="{{ route('quiz.start.post') }}" style="display:grid; gap:12px;">
-        @csrf
+        <form action="{{ route('quiz.start.post') }}" method="POST" class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 space-y-4">
+            @csrf
 
-        <label>
-            Naam
-            <input type="text" name="name" required value="{{ old('name') }}" style="width:100%; padding:8px;">
-        </label>
+            <label class="block">
+                <span class="text-gray-700 dark:text-gray-200 font-medium">Naam</span>
+                <input type="text" name="name" value="{{ old('name') }}" required
+                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </label>
 
-        <label>
-            E-mail
-            <input type="email" name="email" required value="{{ old('email') }}" style="width:100%; padding:8px;">
-        </label>
+            <label class="block">
+                <span class="text-gray-700 dark:text-gray-200 font-medium">E-mail</span>
+                <input type="email" name="email" value="{{ old('email') }}" required
+                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </label>
 
-        <label>
-            Aantal vragen (beschikbaar: {{ $questionCount }})
-            <input type="number" name="count" min="1" max="{{ $questionCount }}" required value="{{ min(10, max(1, $questionCount)) }}" style="width:100%; padding:8px;">
-        </label>
+            <label class="block">
+                <span class="text-gray-700 dark:text-gray-200 font-medium">Aantal vragen (beschikbaar: {{ $questionCount }})</span>
+                <input type="number" name="count" min="1" max="{{ $questionCount }}" value="{{ min(10,max(1,$questionCount)) }}" required
+                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </label>
 
-        <button type="submit" style="padding:10px 16px;">Start</button>
-    </form>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg transition">
+                Start
+            </button>
+        </form>
 
-    <p style="margin-top:24px;">
-        Docent? Bekijk <a href="{{ route('teacher.results') }}">resultaten</a>.
-    </p>
-</body>
-</html>
+        <p class="text-center mt-4 text-gray-600 dark:text-gray-400">
+            Docent? Bekijk <a href="{{ route('teacher.results') }}" class="text-indigo-600 hover:underline">resultaten</a>.
+        </p>
+    </div>
+</x-app-layout>

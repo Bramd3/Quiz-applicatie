@@ -1,72 +1,54 @@
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="utf-8">
-    <title>Quiz</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: sans-serif;
-            max-width: 900px;
-            margin: 32px auto;
-        }
-        fieldset {
-            border: 1px solid #ddd;
-            padding: 16px;
-            border-radius: 8px;
-        }
-        legend {
-            font-weight: bold;
-        }
-        label {
-            display: block;
-            margin: 6px 0;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-        }
-        button {
-            padding: 10px 16px;
-            margin-top: 16px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Beantwoord de vragen</h1>
+<x-app-layout>
+    <x-slot name="header">
+        Quiz: {{ $test->title ?? 'Beantwoord de vragen' }}
+    </x-slot>
 
-    <form action="{{ route('quiz.submit', $test) }}" method="POST" style="display:grid; gap:24px;">
-        @csrf
+<div class="max-w-2xl mx-auto space-y-6">
 
-        @foreach ($answers as $index => $answer)
-            @php
-                $q = $answer->question;
+    <!-- Progress bar -->
+    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+        <div class="bg-purple-500 h-4 rounded-full transition-all"
+             style="width: {{ ($current+1)/$total*100 }}%;"></div>
+    </div>
 
-                // Decode JSON voor multiple choice
-                $options = [];
-                if ($q->type === 'multiple_choice' && $q->options) {
-                    $options = json_decode($q->options, true);
-                }
-            @endphp
+    <!-- Vraag card -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-4">
+        @php
+            $answer = $answers[$current];
+            $q = $answer->question;
+            $options = [];
+            if ($q->type === 'multiple_choice' && $q->options) {
+                $options = json_decode($q->options, true);
+            }
+        @endphp
 
-            <fieldset>
-                <legend>Vraag {{ $index + 1 }}</legend>
-                <p style="font-weight:600; margin-bottom:10px;">{{ $q->question }}</p>
+        <p class="text-xl font-semibold">Vraag {{ $current+1 }} / {{ $total }}</p>
+        <p class="text-gray-700 dark:text-gray-200 text-lg">{{ $q->question }}</p>
 
-                @if ($q->type === 'multiple_choice')
-                    @foreach ($options as $opt)
-                        <label>
-                            <input type="radio" name="answers[{{ $answer->id }}]" value="{{ $opt }}" required>
+        <form action="{{ route('quiz.submit', $test) }}" method="POST" class="space-y-4">
+            @csrf
+            <input type="hidden" name="answer_id" value="{{ $answer->id }}">
+
+            @if($q->type === 'multiple_choice')
+                <div class="grid grid-cols-1 gap-3">
+                    @foreach($options as $opt)
+                        <button type="submit" name="answer" value="{{ $opt }}"
+                                class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 rounded-xl hover:from-indigo-600 hover:to-purple-700 transition">
                             {{ $opt }}
-                        </label>
+                        </button>
                     @endforeach
-                @else
-                    <input type="text" name="answers[{{ $answer->id }}]" required>
-                @endif
-            </fieldset>
-        @endforeach
-
-        <button type="submit">Inleveren en nakijken</button>
-    </form>
-</body>
-</html>
+                </div>
+            @else
+                <div class="flex space-x-2">
+                    <input type="text" name="answer" required
+                           class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button type="submit"
+                            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-4 rounded-lg transition">
+                        Volgende
+                    </button>
+                </div>
+            @endif
+        </form>
+    </div>
+</div>
+</x-app-layout>

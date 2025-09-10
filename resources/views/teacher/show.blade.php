@@ -1,43 +1,40 @@
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="utf-8">
-    <title>Resultaten test #{{ $test->id }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="font-family:sans-serif; max-width:1000px; margin:32px auto;">
-    <h1>Resultaten test #{{ $test->id }}</h1>
+<x-app-layout>
+    <x-slot name="header">
+        Resultaten test #{{ $test->id }}
+    </x-slot>
 
-    @if (session('success'))
-        <p style="color:#065f46">{{ session('success') }}</p>
-    @endif
+    <div class="max-w-4xl mx-auto space-y-6">
 
-    <p>
-        Student: <strong>{{ $test->user->name }}</strong> ({{ $test->user->email }})<br>
-        Datum: {{ $test->created_at->format('d-m-Y H:i') }}<br>
-        Score: <strong>{{ $test->score }}</strong> / {{ $total }}
-    </p>
+        @if(session('success'))
+            <div class="bg-green-100 text-green-800 rounded-lg p-4">{{ session('success') }}</div>
+        @endif
 
-    <hr style="margin:16px 0;">
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 space-y-2">
+            <p><span class="font-semibold">Student:</span> {{ $test->user->name }} ({{ $test->user->email }})</p>
+            <p><span class="font-semibold">Datum:</span> {{ $test->created_at->format('d-m-Y H:i') }}</p>
+            <p><span class="font-semibold">Score:</span> {{ $test->score }} / {{ $total }}</p>
+        </div>
 
-    <ol>
-        @foreach ($test->answers as $idx => $ans)
-            <li style="margin-bottom:16px;">
-                <div style="font-weight:600;">{{ $ans->question->question }}</div>
-                <div>Jouw antwoord: <strong>{{ $ans->student_answer ?? '—' }}</strong></div>
-                <div>Correct antwoord: <strong>{{ $ans->question->answer }}</strong></div>
-                <div>
-                    Status:
-                    @if ($ans->is_correct)
-                        <span style="color:#065f46">✔️ Correct</span>
-                    @else
-                        <span style="color:#b91c1c">❌ Fout</span>
-                    @endif
+        <div class="space-y-4">
+            @foreach($test->answers as $idx => $ans)
+                <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-4 space-y-2">
+                    <p class="font-semibold">{{ $idx+1 }}. {{ $ans->question->question }}</p>
+                    <p>Jouw antwoord: <strong>{{ $ans->student_answer ?? '—' }}</strong></p>
+                    <p>Correct antwoord: <strong>{{ $ans->question->answer }}</strong></p>
+                    <p>
+                        Status:
+                        @if($ans->is_correct)
+                            <span class="text-green-600 font-semibold">✔️ Correct</span>
+                        @else
+                            <span class="text-red-600 font-semibold">❌ Fout</span>
+                        @endif
+                    </p>
                 </div>
-            </li>
-        @endforeach
-    </ol>
+            @endforeach
+        </div>
 
-    <p><a href="{{ route('teacher.results') }}">← Terug naar overzicht</a></p>
-</body>
-</html>
+        <div>
+            <a href="{{ route('teacher.results') }}" class="text-indigo-600 hover:underline">← Terug naar overzicht</a>
+        </div>
+    </div>
+</x-app-layout>
