@@ -1,47 +1,115 @@
-<x-app-layout>
-    <x-slot name="header">
-        Start een nieuwe quiz
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="max-w-lg mx-auto">
-        @if ($errors->any())
-            <div class="bg-red-100 text-red-800 rounded-lg p-4 mb-4">
-                <ul class="list-disc list-inside space-y-1">
-                    @foreach ($errors->all() as $e)
-                        <li>{{ $e }}</li>
-                    @endforeach
-                </ul>
+@section('content')
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card quiz-card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="bi bi-play-circle me-2"></i>Quiz Starten</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Welkom bij de Quiz Applicatie!</h5>
+                        <p class="text-muted">Test je kennis met onze interactieve quiz. Vul je gegevens in om te beginnen.</p>
+                        
+                        @if($questionCount > 0)
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Er zijn momenteel <strong>{{ $questionCount }}</strong> vragen beschikbaar.
+                            </div>
+                        @else
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Er zijn momenteel geen vragen beschikbaar. Neem contact op met je docent.
+                            </div>
+                        @endif
+                    </div>
+
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('quiz.start.post') }}">
+                        @csrf
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Naam</label>
+                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                   id="name" name="name" value="{{ old('name') }}" required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mailadres</label>
+                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                                   id="email" name="email" value="{{ old('email') }}" required>
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="count" class="form-label">Aantal vragen</label>
+                            <select class="form-select @error('count') is-invalid @enderror" id="count" name="count" required>
+                                <option value="">Kies aantal vragen...</option>
+                                @for($i = 1; $i <= min($questionCount, 20); $i++)
+                                    <option value="{{ $i }}" {{ old('count') == $i ? 'selected' : '' }}>
+                                        {{ $i }} {{ $i == 1 ? 'vraag' : 'vragen' }}
+                                    </option>
+                                @endfor
+                            </select>
+                            @error('count')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" {{ $questionCount == 0 ? 'disabled' : '' }}>
+                                <i class="bi bi-play-fill me-2"></i>Quiz Starten
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        De quiz wordt automatisch opgeslagen. Je kunt je antwoorden niet meer wijzigen na het indienen.
+                    </small>
+                </div>
             </div>
-        @endif
-
-        <form action="{{ route('quiz.start.post') }}" method="POST" class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 space-y-4">
-            @csrf
-
-            <label class="block">
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Naam</span>
-                <input type="text" name="name" value="{{ old('name') }}" required
-                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </label>
-
-            <label class="block">
-                <span class="text-gray-700 dark:text-gray-200 font-medium">E-mail</span>
-                <input type="email" name="email" value="{{ old('email') }}" required
-                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </label>
-
-            <label class="block">
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Aantal vragen (beschikbaar: {{ $questionCount }})</span>
-                <input type="number" name="count" min="1" max="{{ $questionCount }}" value="{{ min(10,max(1,$questionCount)) }}" required
-                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </label>
-
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg transition">
-                Start
-            </button>
-        </form>
-
-        <p class="text-center mt-4 text-gray-600 dark:text-gray-400">
-            Docent? Bekijk <a href="{{ route('teacher.results') }}" class="text-indigo-600 hover:underline">resultaten</a>.
-        </p>
+            
+            <div class="text-center mt-3">
+                @auth
+                    @if(auth()->user()->isTeacher())
+                        <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-speedometer2 me-2"></i>Naar Docent Dashboard
+                        </a>
+                    @endif
+                @endauth
+                
+                <a href="{{ route('quiz.my-results.form') }}" class="btn btn-outline-info">
+                    <i class="bi bi-clipboard-data me-2"></i>Mijn Quiz Resultaten
+                </a>
+                
+                @guest
+                    <div class="mt-2">
+                        <p class="text-muted">
+                            Docent? <a href="{{ route('login') }}" class="text-decoration-none">Log hier in</a>
+                        </p>
+                    </div>
+                @endguest
+            </div>
+        </div>
     </div>
-</x-app-layout>
+</div>
+@endsection

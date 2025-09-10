@@ -1,47 +1,119 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@extends('layouts.app')
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+@section('content')
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card quiz-card">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3 class="mb-0">
+                        <i class="bi bi-mortarboard me-2"></i>Quiz Applicatie
+                    </h3>
+                    <p class="mb-0 mt-2">Docent Login</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <!-- Session Status -->
+                    @if (session('status'))
+                        <div class="alert alert-success" role="alert">
+                            {{ session('status') }}
+                        </div>
+                    @endif
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="bi bi-envelope me-1"></i>E-mailadres
+                            </label>
+                            <input id="email" type="email" 
+                                   class="form-control form-control-lg @error('email') is-invalid @enderror" 
+                                   name="email" value="{{ old('email') }}" 
+                                   required autofocus autocomplete="username"
+                                   placeholder="Voer je e-mailadres in">
+                            @error('email')
+                                <div class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock me-1"></i>Wachtwoord
+                            </label>
+                            <input id="password" type="password" 
+                                   class="form-control form-control-lg @error('password') is-invalid @enderror" 
+                                   name="password" required autocomplete="current-password"
+                                   placeholder="Voer je wachtwoord in">
+                            @error('password')
+                                <div class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember_me" name="remember">
+                                <label class="form-check-label" for="remember_me">
+                                    Onthoud mij
+                                </label>
+                            </div>
+                        </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Inloggen
+                            </button>
+                        </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
+                        <div class="text-center mt-3">
+                            @if (Route::has('password.request'))
+                                <a class="text-decoration-none" href="{{ route('password.request') }}">
+                                    <i class="bi bi-question-circle me-1"></i>Wachtwoord vergeten?
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer bg-light text-center">
+                    <small class="text-muted">
+                        Nog geen account? 
+                        <a href="{{ route('register') }}" class="text-decoration-none">Registreer hier</a>
+                    </small>
+                    <br>
+                    <small class="text-muted mt-2 d-block">
+                        Student? <a href="{{ route('quiz.start') }}" class="text-decoration-none">Start direct een quiz</a>
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Test Accounts Info -->
+            @if(config('app.debug'))
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-info-circle me-1"></i>Test Accounts</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Docent:</strong><br>
+                                <small>teacher@quiz.app</small><br>
+                                <small>password123</small>
+                            </div>
+                            <div class="col-6">
+                                <strong>Student:</strong><br>
+                                <small>student@quiz.app</small><br>
+                                <small>password123</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
         </div>
-    </form>
-</x-guest-layout>
+    </div>
+</div>
+@endsection

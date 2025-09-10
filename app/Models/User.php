@@ -53,4 +53,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Test::class);
     }
+
+    /**
+     * Check if user is a teacher
+     */
+    public function isTeacher()
+    {
+        return $this->role === 'teacher';
+    }
+
+    /**
+     * Check if user is a student
+     */
+    public function isStudent()
+    {
+        return $this->role === 'student';
+    }
 }

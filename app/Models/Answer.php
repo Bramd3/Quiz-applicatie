@@ -16,6 +16,18 @@ class Answer extends Model
         'is_correct',
     ];
 
+    protected $casts = [
+        'is_correct' => 'boolean',
+    ];
+
+    /**
+     * Check if this answer has been submitted
+     */
+    public function isSubmitted()
+    {
+        return !is_null($this->student_answer);
+    }
+
     // Antwoord hoort bij een test
     public function test()
     {

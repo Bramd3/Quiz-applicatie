@@ -1,50 +1,99 @@
-<x-app-layout>
-    <x-slot name="header">
-        Resultaten overzicht
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="overflow-x-auto bg-white dark:bg-gray-800 shadow-lg rounded-xl">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">#</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Score</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Datum</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actie</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                @forelse($tests as $t)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-6 py-4">{{ $t->id }}</td>
-                        <td class="px-6 py-4">{{ $t->user->name }}</td>
-                        <td class="px-6 py-4">{{ $t->user->email }}</td>
-                        <td class="px-6 py-4">{{ $t->score ?? '—' }}</td>
-                        <td class="px-6 py-4">{{ $t->created_at->format('d-m-Y H:i') }}</td>
-                        <td class="px-6 py-4">
-                            <a href="{{ route('teacher.results.show', $t) }}" class="text-indigo-600 hover:underline">Bekijken</a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Nog geen resultaten.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="text-center mt-4">
-        <a href="{{ route('quiz.start') }}" class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg transition">
-            Nieuwe quiz starten
+@section('content')
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bar-chart-line me-2"></i>Alle Test Resultaten</h2>
+        <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-primary">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
         </a>
     </div>
-
-    @if(method_exists($tests, 'links'))
-        <div class="mt-4">
-            {{ $tests->links() }}
+    
+    <div class="card">
+        <div class="card-body">
+            @if($tests->count() > 0)
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Email</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Datum</th>
+                                <th>Status</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $totalQuestions = \App\Models\Question::count();
+                            @endphp
+                            @foreach($tests as $test)
+                                @php
+                                    $percentage = $test->score && $totalQuestions > 0 
+                                        ? round(($test->score / $totalQuestions) * 100, 1) 
+                                        : 0;
+                                    $badgeClass = $percentage >= 80 ? 'success' : ($percentage >= 60 ? 'warning' : 'danger');
+                                    $statusClass = $test->score !== null ? 'success' : 'warning';
+                                    $statusText = $test->score !== null ? 'Voltooid' : 'In uitvoering';
+                                @endphp
+                                <tr>
+                                    <td><strong>{{ $test->id }}</strong></td>
+                                    <td>
+                                        <i class="bi bi-person-circle me-2"></i>{{ $test->user->name }}
+                                    </td>
+                                    <td><small>{{ $test->user->email }}</small></td>
+                                    <td>
+                                        @if($test->score !== null)
+                                            <strong>{{ $test->score }}/{{ $totalQuestions }}</strong>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($test->score !== null)
+                                            <span class="badge bg-{{ $badgeClass }}">{{ $percentage }}%</span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ $test->created_at->format('d/m/Y H:i') }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $statusClass }}">{{ $statusText }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('teacher.results.show', $test) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i>Bekijken
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                @if(method_exists($tests, 'links'))
+                    <div class="d-flex justify-content-center mt-4">
+                        {{ $tests->links() }}
+                    </div>
+                @endif
+            @else
+                <div class="text-center py-5">
+                    <i class="bi bi-clipboard-x display-1 text-muted mb-4"></i>
+                    <h4>Nog geen resultaten</h4>
+                    <p class="text-muted">Er zijn nog geen quizzes afgenomen.</p>
+                    <a href="{{ route('quiz.start') }}" class="btn btn-primary">
+                        <i class="bi bi-play-circle me-1"></i>Eerste Quiz Starten
+                    </a>
+                </div>
+            @endif
         </div>
-    @endif
-</x-app-layout>
+    </div>
+</div>
+@endsection

@@ -44,6 +44,7 @@ class QuizController extends Controller
             'score' => null,
         ]);
 
+        // Create Answer records for tracking
         foreach ($questions as $q) {
             Answer::create([
                 'test_id' => $test->id,
@@ -70,7 +71,7 @@ class QuizController extends Controller
 
         // Als al nagekeken is, ga naar resultaten
         if (!is_null($test->score)) {
-            return redirect()->route('teacher.results.show', $test->id);
+            return redirect()->route('results.show', $test->id);
         }
 
         // Huidige vraag index uit session
@@ -80,7 +81,7 @@ class QuizController extends Controller
         // Zorg dat index binnen range is
         if ($current >= $total) {
             session()->forget('current_question');
-            return redirect()->route('teacher.results.show', $test->id);
+            return redirect()->route('results.show', $test->id);
         }
 
         $question = $answers[$current];
@@ -96,7 +97,7 @@ class QuizController extends Controller
 
         if ($current >= $answers->count()) {
             session()->forget('current_question');
-            return redirect()->route('teacher.results.show', $test->id);
+            return redirect()->route('results.show', $test->id);
         }
 
         $answer = $answers[$current];
@@ -129,12 +130,49 @@ class QuizController extends Controller
             $test->update(['score' => $score]);
             session()->forget('current_question');
 
-            return redirect()->route('teacher.results.show', $test->id)
+            return redirect()->route('results.show', $test->id)
                              ->with('success', 'Quiz voltooid! Je antwoorden zijn opgeslagen.');
         }
 
         session(['current_question' => $current]);
 
         return redirect()->route('quiz.play', $test);
+    }
+
+    // Show quiz results (accessible by anyone with the link)
+    public function showResults(Test $test)
+    {
+        // Make sure the test has been completed
+        if (is_null($test->score)) {
+            return redirect()->route('quiz.play', $test)
+                ->with('error', 'Deze quiz is nog niet voltooid.');
+        }
+
+        $test->load(['user', 'answers.question']);
+        $total = $test->answers()->count();
+        
+        return view('quiz.results', compact('test', 'total'));
+    }
+    
+    // Show student's own quiz history
+    public function myResults(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+        
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return back()->withErrors(['email' => 'Geen gebruiker gevonden met dit e-mailadres.']);
+        }
+        
+        $tests = Test::where('user_id', $user->id)
+            ->whereNotNull('score')
+            ->with(['answers.question'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        return view('quiz.my-results', compact('tests', 'user'));
     }
 }

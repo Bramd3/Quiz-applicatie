@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             // Nieuw veld voor rol
-            $table->enum('role', ['student', 'docent'])->default('student');
+            $table->enum('role', ['student', 'teacher'])->default('student');
             $table->rememberToken();
             $table->timestamps();
         });
