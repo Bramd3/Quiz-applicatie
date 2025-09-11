@@ -27,13 +27,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $totalQuestions = \App\Models\Question::count();
-                            @endphp
                             @foreach($tests as $test)
                                 @php
-                                    $percentage = $test->score && $totalQuestions > 0 
-                                        ? round(($test->score / $totalQuestions) * 100, 1) 
+                                    $percentage = $test->score && $test->total_questions 
+                                        ? round(($test->score / $test->total_questions) * 100, 1) 
                                         : 0;
                                     $badgeClass = $percentage >= 80 ? 'success' : ($percentage >= 60 ? 'warning' : 'danger');
                                     $statusClass = $test->score !== null ? 'success' : 'warning';
@@ -41,13 +38,11 @@
                                 @endphp
                                 <tr>
                                     <td><strong>{{ $test->id }}</strong></td>
-                                    <td>
-                                        <i class="bi bi-person-circle me-2"></i>{{ $test->user->name }}
-                                    </td>
+                                    <td><i class="bi bi-person-circle me-2"></i>{{ $test->user->name }}</td>
                                     <td><small>{{ $test->user->email }}</small></td>
                                     <td>
                                         @if($test->score !== null)
-                                            <strong>{{ $test->score }}/{{ $totalQuestions }}</strong>
+                                            <strong>{{ $test->score }}/{{ $test->total_questions }}</strong>
                                         @else
                                             <span class="text-muted">—</span>
                                         @endif
@@ -59,15 +54,10 @@
                                             <span class="text-muted">—</span>
                                         @endif
                                     </td>
+                                    <td><small class="text-muted">{{ $test->created_at->format('d/m/Y H:i') }}</small></td>
+                                    <td><span class="badge bg-{{ $statusClass }}">{{ $statusText }}</span></td>
                                     <td>
-                                        <small class="text-muted">{{ $test->created_at->format('d/m/Y H:i') }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ $statusClass }}">{{ $statusText }}</span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('teacher.results.show', $test) }}" 
-                                           class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ route('teacher.results.show', $test) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-eye me-1"></i>Bekijken
                                         </a>
                                     </td>
@@ -76,8 +66,7 @@
                         </tbody>
                     </table>
                 </div>
-                
-                <!-- Pagination -->
+
                 @if(method_exists($tests, 'links'))
                     <div class="d-flex justify-content-center mt-4">
                         {{ $tests->links() }}

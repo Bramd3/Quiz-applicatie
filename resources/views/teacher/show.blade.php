@@ -4,10 +4,6 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-
             <!-- Summary Card -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
@@ -26,11 +22,13 @@
                         <div class="col-md-4">
                             <div class="mb-2"><strong>Score:</strong></div>
                             @php
-                                $percentage = $total > 0 ? round(($test->score / $total) * 100, 1) : 0;
+                                $percentage = $test->total_questions 
+                                    ? round(($test->score / $test->total_questions) * 100, 1) 
+                                    : 0;
                                 $badgeClass = $percentage >= 80 ? 'success' : ($percentage >= 60 ? 'warning' : 'danger');
                             @endphp
                             <div>
-                                <span class="badge bg-{{ $badgeClass }} fs-6">{{ $test->score }} / {{ $total }} ({{ $percentage }}%)</span>
+                                <span class="badge bg-{{ $badgeClass }} fs-6">{{ $test->score }} / {{ $test->total_questions }} ({{ $percentage }}%)</span>
                             </div>
                         </div>
                     </div>
@@ -47,12 +45,8 @@
                         <div class="card mb-3 {{ $ans->is_correct ? 'result-correct' : 'result-incorrect' }}">
                             <div class="card-body">
                                 <h6 class="card-title mb-2">{{ $idx + 1 }}. {{ $ans->question->question }}</h6>
-                                <p class="mb-1">Jouw antwoord: 
-                                    <strong>{{ $ans->student_answer ?? '—' }}</strong>
-                                </p>
-                                <p class="mb-0">Correct antwoord: 
-                                    <strong class="text-success">{{ $ans->question->answer }}</strong>
-                                </p>
+                                <p class="mb-1">Jouw antwoord: <strong>{{ $ans->student_answer ?? '—' }}</strong></p>
+                                <p class="mb-0">Correct antwoord: <strong class="text-success">{{ $ans->question->answer }}</strong></p>
                             </div>
                         </div>
                     @endforeach
@@ -60,15 +54,9 @@
             </div>
 
             <div class="mt-3">
-                @can('teacher')
-                    <a href="{{ route('teacher.results') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Terug naar overzicht
-                    </a>
-                @else
-                    <a href="{{ route('quiz.start') }}" class="btn btn-primary">
-                        <i class="bi bi-house me-1"></i>Terug naar start
-                    </a>
-                @endcan
+                <a href="{{ route('teacher.results') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Terug naar overzicht
+                </a>
             </div>
         </div>
     </div>

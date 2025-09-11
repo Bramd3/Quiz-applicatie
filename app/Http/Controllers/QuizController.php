@@ -5,46 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Test;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
-    // Startformulier: naam, e-mail, aantal vragen
     public function startForm()
     {
         $questionCount = Question::count();
         return view('quiz.start', compact('questionCount'));
     }
 
-    // Maak (of vind) student user + test + selecteer vragen
     public function start(Request $request)
     {
         $data = $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|max:255',
             'count' => 'required|integer|min:1'
         ]);
 
-        $user = User::firstOrCreate(
-            ['email' => $data['email']],
-            ['name' => $data['name'], 'password' => Str::password(12), 'role' => 'student']
-        );
+        $user = Auth::user();
 
         $questions = Question::inRandomOrder()->limit($data['count'])->get();
 
         if ($questions->isEmpty()) {
-            return back()->withErrors(['count' => 'Er zijn nog geen vragen beschikbaar. Importeer eerst vragen.']);
+            return back()->withErrors(['count' => 'Er zijn nog geen vragen beschikbaar.']);
         }
 
         $test = Test::create([
             'user_id' => $user->id,
             'score' => null,
+            'total_questions' => null,
+            'percentage' => null,
         ]);
 
-        // Create Answer records for tracking
         foreach ($questions as $q) {
             Answer::create([
                 'test_id' => $test->id,
@@ -54,13 +46,11 @@ class QuizController extends Controller
             ]);
         }
 
-        // Start bij eerste vraag
         session(['current_question' => 0]);
 
-        return redirect()->route('quiz.play', $test);
+        return redirect()->route('quiz.play', $test->id);
     }
 
-    // Toon quiz vraag-voor-vraag
     public function play(Test $test)
     {
         $answers = $test->answers()->with('question')->get();
@@ -69,19 +59,16 @@ class QuizController extends Controller
             abort(404, 'Geen vragen beschikbaar voor deze test.');
         }
 
-        // Als al nagekeken is, ga naar resultaten
         if (!is_null($test->score)) {
-            return redirect()->route('results.show', $test->id);
+            return redirect()->route('quiz.results', $test->id);
         }
 
-        // Huidige vraag index uit session
         $current = session('current_question', 0);
         $total = $answers->count();
 
-        // Zorg dat index binnen range is
         if ($current >= $total) {
             session()->forget('current_question');
-            return redirect()->route('results.show', $test->id);
+            return redirect()->route('quiz.results', $test->id);
         }
 
         $question = $answers[$current];
@@ -89,7 +76,6 @@ class QuizController extends Controller
         return view('quiz.play', compact('test', 'answers', 'question', 'current', 'total'));
     }
 
-    // Ontvang antwoord en ga naar volgende vraag
     public function submit(Request $request, Test $test)
     {
         $answers = $test->answers()->with('question')->get();
@@ -97,82 +83,70 @@ class QuizController extends Controller
 
         if ($current >= $answers->count()) {
             session()->forget('current_question');
-            return redirect()->route('results.show', $test->id);
+            return redirect()->route('quiz.results', $test->id);
         }
 
         $answer = $answers[$current];
         $question = $answer->question;
 
-        // Antwoord van gebruiker
         $payload = $request->validate([
             'answer' => 'required|string'
         ]);
 
         $studentValue = trim($payload['answer']);
-        $isCorrect = false;
-
-        if ($question->type === 'multiple_choice') {
-            $isCorrect = strcasecmp($studentValue, $question->answer) === 0;
-        } else {
-            $isCorrect = strcasecmp($studentValue, trim($question->answer)) === 0;
-        }
+        $isCorrect = strcasecmp($studentValue, $question->answer) === 0;
 
         $answer->update([
             'student_answer' => $studentValue,
             'is_correct' => $isCorrect
         ]);
 
-        // Volgende vraag index opslaan
         $current++;
+        session(['current_question' => $current]);
+
         if ($current >= $answers->count()) {
-            // Bereken score
+            // ✅ Bereken score en percentage
             $score = $answers->where('is_correct', true)->count();
-            $test->update(['score' => $score]);
+            $total = $answers->count();
+            $percentage = $total > 0 ? round(($score / $total) * 100, 1) : 0;
+
+            $test->update([
+                'score' => $score,
+                'total_questions' => $total,
+                'percentage' => $percentage
+            ]);
+
             session()->forget('current_question');
 
-            return redirect()->route('results.show', $test->id)
+            return redirect()->route('quiz.results', $test->id)
                              ->with('success', 'Quiz voltooid! Je antwoorden zijn opgeslagen.');
         }
 
-        session(['current_question' => $current]);
-
-        return redirect()->route('quiz.play', $test);
+        return redirect()->route('quiz.play', $test->id);
     }
 
-    // Show quiz results (accessible by anyone with the link)
     public function showResults(Test $test)
     {
-        // Make sure the test has been completed
         if (is_null($test->score)) {
-            return redirect()->route('quiz.play', $test)
-                ->with('error', 'Deze quiz is nog niet voltooid.');
+            return redirect()->route('quiz.play', $test->id)
+                             ->with('error', 'Deze quiz is nog niet voltooid.');
         }
 
         $test->load(['user', 'answers.question']);
-        $total = $test->answers()->count();
-        
-        return view('quiz.results', compact('test', 'total'));
+
+        return view('quiz.results', compact('test'));
     }
-    
-    // Show student's own quiz history
-    public function myResults(Request $request)
+
+    public function myResults()
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-        
-        $user = User::where('email', $request->email)->first();
-        
-        if (!$user) {
-            return back()->withErrors(['email' => 'Geen gebruiker gevonden met dit e-mailadres.']);
-        }
-        
+        $user = Auth::user();
+
         $tests = Test::where('user_id', $user->id)
             ->whereNotNull('score')
             ->with(['answers.question'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-            
+
         return view('quiz.my-results', compact('tests', 'user'));
     }
 }

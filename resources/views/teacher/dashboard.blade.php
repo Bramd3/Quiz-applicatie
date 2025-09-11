@@ -109,27 +109,20 @@
                                 <tbody>
                                     @foreach($recentTests as $test)
                                         @php
-                                            $percentage = $totalQuestions > 0 ? round(($test->score / $totalQuestions) * 100, 1) : 0;
+                                            // Gebruik waarden uit de database, voorkom deling door 0
+                                            $score = $test->score ?? 0;
+                                            $percentage = $test->percentage ?? 0;
                                             $badgeClass = $percentage >= 80 ? 'success' : ($percentage >= 60 ? 'warning' : 'danger');
                                         @endphp
                                         <tr>
                                             <td>
-                                                <i class="bi bi-person-circle me-2"></i>
-                                                {{ $test->user->name }}
+                                                <i class="bi bi-person-circle me-2"></i>{{ $test->user->name }}
                                             </td>
                                             <td>
-                                                @if($test->score !== null)
-                                                    {{ $test->score }}/{{ $totalQuestions }}
-                                                @else
-                                                    <span class="text-muted">In uitvoering...</span>
-                                                @endif
+                                                <strong>{{ $score }}</strong>
                                             </td>
                                             <td>
-                                                @if($test->score !== null)
-                                                    <span class="badge bg-{{ $badgeClass }}">{{ $percentage }}%</span>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
+                                                <span class="badge bg-{{ $badgeClass }}">{{ $percentage }}%</span>
                                             </td>
                                             <td>
                                                 <small class="text-muted">{{ $test->created_at->format('d/m H:i') }}</small>
@@ -145,6 +138,13 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Pagination -->
+                        @if(method_exists($recentTests, 'links'))
+                            <div class="d-flex justify-content-center mt-3">
+                                {{ $recentTests->links() }}
+                            </div>
+                        @endif
                     @else
                         <div class="text-center py-4">
                             <i class="bi bi-inbox display-4 text-muted mb-3"></i>
@@ -158,41 +158,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Sample Questions/Import Instructions -->
-    @if($totalQuestions == 0)
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="alert alert-info">
-                    <h5><i class="bi bi-lightbulb me-2"></i>Aan de slag</h5>
-                    <p>Je hebt nog geen vragen toegevoegd. Hier zijn enkele manieren om te beginnen:</p>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>CSV Import Formaat:</h6>
-                            <pre class="small">question,type,answer,option_1,option_2,option_3,option_4
-"Wat is 2+2?",multiple_choice,"4","2","4","6","8"
-"Hoofdstad van Nederland?",open,"Amsterdam"</pre>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>JSON Import Formaat:</h6>
-                            <pre class="small">[
-  {
-    "question": "Wat is 2+2?",
-    "type": "multiple_choice",
-    "options": ["2", "4", "6", "8"],
-    "answer": "4"
-  },
-  {
-    "question": "Hoofdstad van Nederland?",
-    "type": "open",
-    "answer": "Amsterdam"
-  }
-]</pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 </div>
 @endsection

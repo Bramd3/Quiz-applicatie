@@ -46,13 +46,7 @@
                 </div>
                 <div class="card-body">
                     <div class="question-text mb-4">
-                        <p class="fs-5 mb-0 fw-normal">{{ $q->question }}</p>
-                        @if($q->type === 'multiple_choice' && count($options) > 0)
-                            <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Kies het juiste antwoord uit {{ count($options) }} opties
-                            </small>
-                        @endif
+                        <p class="fs-5 mb-0">{{ $q->question }}</p>
                     </div>
 
                     <form method="POST" action="{{ route('quiz.submit', $test) }}">
@@ -149,36 +143,11 @@
 
 @push('scripts')
 <script>
-// Enhanced button feedback for better UX
+// Prevent double submission
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
-    const optionButtons = document.querySelectorAll('.option-btn');
     let submitted = false;
     
-    // Add click handlers for option buttons
-    optionButtons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            if (submitted) return;
-            
-            // Immediate visual feedback
-            this.classList.remove('btn-outline-primary');
-            this.classList.add('btn-primary', 'loading-pulse');
-            
-            // Disable all other buttons
-            optionButtons.forEach(btn => {
-                if (btn !== this) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.3';
-                }
-            });
-            
-            // Show loading state
-            const originalText = this.innerHTML;
-            this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Geselecteerd...';
-        });
-    });
-    
-    // Form submission handler
     if (form) {
         form.addEventListener('submit', function(e) {
             if (submitted) {
@@ -186,6 +155,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             submitted = true;
+            
+            // Visual feedback: disable buttons after click
+            setTimeout(function() {
+                const buttons = form.querySelectorAll('button[type="submit"]');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Bezig...';
+                });
+            }, 50);
         });
     }
 });
